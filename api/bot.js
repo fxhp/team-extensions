@@ -1,8 +1,11 @@
 // Minimal Teams bot endpoint for Vercel
 // Responds with Adaptive Cards for "text", "table", "chart"
+// Logs both request and response
 
 export default async function handler(req, res) {
+  // Log the incoming request body
   console.log("Incoming request from Teams:", JSON.stringify(req.body, null, 2));
+
   const text = (req.body.text || "").toLowerCase().trim();
 
   // Sample Adaptive Cards
@@ -65,8 +68,8 @@ export default async function handler(req, res) {
     };
   }
 
-  // Respond with a bot-style message containing the card
-  res.status(200).json({
+  // Build the response
+  const responsePayload = {
     type: "message",
     attachments: [
       {
@@ -74,5 +77,11 @@ export default async function handler(req, res) {
         content: cardContent
       }
     ]
-  });
+  };
+
+  // Log the outgoing response
+  console.log("Outgoing response to Teams:", JSON.stringify(responsePayload, null, 2));
+
+  // Send the response
+  res.status(200).json(responsePayload);
 }

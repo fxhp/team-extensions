@@ -1,6 +1,6 @@
 {
   "name": "teams-bot-adaptive-demo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "dependencies": {
     "botbuilder": "^4.22.1"

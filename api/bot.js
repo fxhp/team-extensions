@@ -2,6 +2,7 @@
 // Responds with Adaptive Cards for "text", "table", "chart"
 
 export default async function handler(req, res) {
+  console.log("Incoming request from Teams:", JSON.stringify(req.body, null, 2));
   const text = (req.body.text || "").toLowerCase().trim();
 
   // Sample Adaptive Cards

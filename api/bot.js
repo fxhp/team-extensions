@@ -1,8 +1,15 @@
-// api/bot.js
-// Teams bot endpoint for Vercel using Bot Framework Adapter
-// Responds with text or Adaptive Cards based on user input
-
 const { BotFrameworkAdapter } = require("botbuilder");
+
+// Mask the secret: show first 4 and last 4 characters only
+function maskSecret(secret) {
+  if (!secret) return "NOT SET";
+  if (secret.length <= 8) return "SET (too short to mask safely)";
+  return `${secret.substring(0, 4)}...${secret.substring(secret.length - 4)} (length: ${secret.length})`;
+}
+
+// Log App ID and Secret (masked)
+console.log("MicrosoftAppId:", process.env.MicrosoftAppId || "NOT SET");
+console.log("MicrosoftAppPassword:", maskSecret(process.env.MicrosoftAppPassword));
 
 // Adapter with credentials from Vercel environment variables
 const adapter = new BotFrameworkAdapter({
@@ -10,7 +17,7 @@ const adapter = new BotFrameworkAdapter({
   appPassword: process.env.MicrosoftAppPassword
 });
 
-// Adaptive Card samples
+// Sample Adaptive Card
 const textCard = {
   type: "AdaptiveCard",
   version: "1.4",
@@ -20,70 +27,37 @@ const textCard = {
   ]
 };
 
-const tableCard = {
-  type: "AdaptiveCard",
-  version: "1.4",
-  body: [
-    { type: "TextBlock", text: "Team Attendance", weight: "Bolder", size: "Medium" },
-    {
-      type: "ColumnSet",
-      columns: [
-        { type: "Column", items: [{ type: "TextBlock", text: "Name", weight: "Bolder" }] },
-        { type: "Column", items: [{ type: "TextBlock", text: "Status", weight: "Bolder" }] }
-      ]
-    },
-    {
-      type: "ColumnSet",
-      columns: [
-        { type: "Column", items: [{ type: "TextBlock", text: "Felix" }] },
-        { type: "Column", items: [{ type: "TextBlock", text: "Present" }] }
-      ]
-    }
-  ]
-};
-
-const chartCard = {
-  type: "AdaptiveCard",
-  version: "1.4",
-  body: [
-    { type: "TextBlock", text: "Sales Performance", weight: "Bolder", size: "Medium" },
-    { type: "TextBlock", text: "Q1: 🔵🔵🔵🔵🔵", wrap: true },
-    { type: "TextBlock", text: "Q2: 🔵🔵🔵🔵", wrap: true },
-    { type: "TextBlock", text: "Q3: 🔵🔵🔵🔵🔵🔵", wrap: true }
-  ]
-};
-
-// Vercel function handler
 module.exports = async (req, res) => {
+  // Log incoming request
+  console.log("Incoming request:", JSON.stringify(req.body, null, 2));
+
   await adapter.processActivity(req, res, async (context) => {
     if (context.activity.type === "message") {
       const text = (context.activity.text || "").toLowerCase().trim();
 
-      let card;
+      let responsePayload;
       if (text.includes("text")) {
-        card = textCard;
-      } else if (text.includes("table")) {
-        card = tableCard;
-      } else if (text.includes("chart")) {
-        card = chartCard;
-      }
-
-      if (card) {
-        await context.sendActivity({
+        responsePayload = {
           attachments: [
             {
               contentType: "application/vnd.microsoft.card.adaptive",
-              content: card
+              content: textCard
             }
           ]
-        });
+        };
       } else {
-        await context.sendActivity("Try: 'text', 'table', or 'chart'.");
+        responsePayload = { text: "Try: 'text' for a sample Adaptive Card." };
       }
+
+      // Log outgoing response
+      console.log("Outgoing response:", JSON.stringify(responsePayload, null, 2));
+
+      await context.sendActivity(responsePayload);
     } else if (context.activity.type === "conversationUpdate") {
-      // Welcome message when bot is added
       if (context.activity.membersAdded?.some(m => m.id === context.activity.recipient.id)) {
-        await context.sendActivity("Welcome! Send 'text', 'table', or 'chart'.");
+        const welcome = "Welcome! Send 'text' to see a sample Adaptive Card.";
+        console.log("Outgoing welcome response:", welcome);
+        await context.sendActivity(welcome);
       }
     }
   });

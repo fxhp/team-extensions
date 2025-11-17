@@ -1,94 +1,77 @@
-const { BotFrameworkAdapter, MemoryStorage, ConversationState } = require('botbuilder');
+// Minimal Teams bot endpoint for Vercel
+// Responds with Adaptive Cards for "text", "table", "chart"
 
-// Adapter with Teams credentials (set in Vercel env vars)
-const adapter = new BotFrameworkAdapter({
-  appId: process.env.MicrosoftAppId,
-  appPassword: process.env.MicrosoftAppPassword
-});
+export default async function handler(req, res) {
+  const text = (req.body.text || "").toLowerCase().trim();
 
-// Optional: conversation state
-const conversationState = new ConversationState(new MemoryStorage());
+  // Sample Adaptive Cards
+  const textCard = {
+    type: "AdaptiveCard",
+    version: "1.4",
+    body: [
+      { type: "TextBlock", text: "Hello Felix 👋", weight: "Bolder", size: "Medium" },
+      { type: "TextBlock", text: "This is a text-based Adaptive Card.", wrap: true }
+    ]
+  };
 
-// Adaptive Card samples
-const textCard = {
-  type: "AdaptiveCard",
-  version: "1.4",
-  body: [
-    { type: "TextBlock", text: "Hello Felix 👋", weight: "Bolder", size: "Medium" },
-    { type: "TextBlock", text: "This is a text-based Adaptive Card.", wrap: true }
-  ]
-};
+  const tableCard = {
+    type: "AdaptiveCard",
+    version: "1.4",
+    body: [
+      { type: "TextBlock", text: "Team Attendance", weight: "Bolder", size: "Medium" },
+      {
+        type: "ColumnSet",
+        columns: [
+          { type: "Column", items: [{ type: "TextBlock", text: "Name", weight: "Bolder" }] },
+          { type: "Column", items: [{ type: "TextBlock", text: "Status", weight: "Bolder" }] }
+        ]
+      },
+      {
+        type: "ColumnSet",
+        columns: [
+          { type: "Column", items: [{ type: "TextBlock", text: "Felix" }] },
+          { type: "Column", items: [{ type: "TextBlock", text: "Present" }] }
+        ]
+      }
+    ]
+  };
 
-const tableCard = {
-  type: "AdaptiveCard",
-  version: "1.4",
-  body: [
-    { type: "TextBlock", text: "Team Attendance", weight: "Bolder", size: "Medium" },
-    {
-      type: "ColumnSet",
-      columns: [
-        { type: "Column", items: [{ type: "TextBlock", text: "Name", weight: "Bolder" }] },
-        { type: "Column", items: [{ type: "TextBlock", text: "Status", weight: "Bolder" }] }
+  const chartCard = {
+    type: "AdaptiveCard",
+    version: "1.4",
+    body: [
+      { type: "TextBlock", text: "Sales Performance", weight: "Bolder", size: "Medium" },
+      { type: "TextBlock", text: "Q1: 🔵🔵🔵🔵🔵", wrap: true },
+      { type: "TextBlock", text: "Q2: 🔵🔵🔵🔵", wrap: true },
+      { type: "TextBlock", text: "Q3: 🔵🔵🔵🔵🔵🔵", wrap: true }
+    ]
+  };
+
+  let cardContent;
+  if (text.includes("text")) {
+    cardContent = textCard;
+  } else if (text.includes("table")) {
+    cardContent = tableCard;
+  } else if (text.includes("chart")) {
+    cardContent = chartCard;
+  } else {
+    cardContent = {
+      type: "AdaptiveCard",
+      version: "1.4",
+      body: [
+        { type: "TextBlock", text: "Unknown command. Try 'text', 'table', or 'chart'.", color: "Attention" }
       ]
-    },
-    {
-      type: "ColumnSet",
-      columns: [
-        { type: "Column", items: [{ type: "TextBlock", text: "Felix" }] },
-        { type: "Column", items: [{ type: "TextBlock", text: "Present" }] }
-      ]
-    }
-  ]
-};
+    };
+  }
 
-const chartCard = {
-  type: "AdaptiveCard",
-  version: "1.4",
-  body: [
-    { type: "TextBlock", text: "Sales Performance", weight: "Bolder", size: "Medium" },
-    { type: "TextBlock", text: "Q1: 🔵🔵🔵🔵🔵", wrap: true },
-    { type: "TextBlock", text: "Q2: 🔵🔵🔵🔵", wrap: true },
-    { type: "TextBlock", text: "Q3: 🔵🔵🔵🔵🔵🔵", wrap: true }
-  ]
-};
-
-// Vercel function handler
-module.exports = async (req, res) => {
-  await adapter.processActivity(req, res, async (context) => {
-    const text = (context.activity.text || '').toLowerCase().trim();
-
-    if (context.activity.type === 'message') {
-      let card = null;
-
-      if (text.includes('text')) {
-        card = textCard;
-      } else if (text.includes('table')) {
-        card = tableCard;
-      } else if (text.includes('chart')) {
-        card = chartCard;
+  // Respond with a bot-style message containing the card
+  res.status(200).json({
+    type: "message",
+    attachments: [
+      {
+        contentType: "application/vnd.microsoft.card.adaptive",
+        content: cardContent
       }
-
-      if (card) {
-        await context.sendActivity({
-          attachments: [
-            {
-              contentType: "application/vnd.microsoft.card.adaptive",
-              content: card
-            }
-          ]
-        });
-      } else {
-        await context.sendActivity("Try: “text”, “table”, or “chart”.");
-      }
-
-      await conversationState.saveChanges(context);
-    } else if (context.activity.type === 'conversationUpdate') {
-      // Welcome in 1:1 chat
-      if (context.activity.membersAdded?.some(m => m.id === context.activity.recipient.id)) {
-        await context.sendActivity("Welcome! Send “text”, “table”, or “chart”.");
-      }
-    } else {
-      await context.sendActivity("Ready. Send “text”, “table”, or “chart”.");
-    }
+    ]
   });
-};
+}

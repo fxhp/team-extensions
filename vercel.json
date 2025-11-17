@@ -1,9 +1,9 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/teams.js", "use": "@vercel/node" }
+    { "src": "api/bot.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/teams", "dest": "/api/teams.js" }
+    { "src": "/api/bot", "dest": "/api/bot.js" }
   ]
 }
